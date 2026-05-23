@@ -1,4 +1,4 @@
-# PRSD — Parallel Ring Streaming Dataflow for CNN Convolution Accelerat 
+# PRSD — Parallel Ring Streaming Dataflow for CNN Convolution Acceleration
 
 > HLS project comparing **Ring Streaming Dataflow (RSD)** and the proposed  
 > **Parallel Ring Streaming Dataflow (PRSD)** for 2-D convolution acceleration.  
