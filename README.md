@@ -1,4 +1,4 @@
-# PRSD — Parallel Ring Streaming Dataflow for CNN Convolution Acceleration on FPGA
+# PRSD — Parallel Ring Streaming Dataflow for CNN Convolution Accelerat 
 
 > HLS project comparing **Ring Streaming Dataflow (RSD)** and the proposed  
 > **Parallel Ring Streaming Dataflow (PRSD)** for 2-D convolution acceleration.  
@@ -30,11 +30,14 @@
    - 7.3 [PRSD vs RSD speedup derivation](#73-prsd-vs-rsd-speedup-derivation)
    - 7.4 [Worked examples — all layers](#74-worked-examples--all-layers)
 8. [Verified results table](#8-verified-results-table)
+   - 8.1 [LeNet-5](#81-lenet-5)
+   - 8.2 [Mini VGGNet-32](#82-mini-vggnet-32)
 9. [Hardware utilisation tradeoff](#9-hardware-utilisation-tradeoff)
-10. [File structure](#10-file-structure)
-11. [How to run](#11-how-to-run)
+10. [Results](#10-results)
+    - 10.1 [LeNet-5](#101-lenet-5)
+    - 10.2 [Mini VGGNet-32](#102-mini-vggnet-32)
+11. [File structure](#11-file-structure)
 12. [References](#12-references)
-
 ---
 
 ## 1. Background and motivation
@@ -87,6 +90,9 @@ rows in a boustrophedon (alternating-direction) pattern:
 Each IFM pixel stays in the kernel window for the maximum possible number of output
 positions before eviction, minimising redundant data reads.
 
+![Ring Streaming Dataflow](Screenshots/RSD.png)
+
+
 **Output rate:** one OFM pixel per innermost-loop iteration.
 
 **HLS loop structure:**
@@ -114,6 +120,10 @@ The outer H loop advances by **4** (instead of 1). Four local accumulators
 channel and kernel loops, two OFM rows are written unconditionally; two additional
 rows are written conditionally at spatial boundaries where the extended window
 overlaps valid output positions.
+
+<!-- Small -->
+<img src="https://github.com/ariXcoder/Ring-Stream-Convolution/blob/2ff38adee88cfddd741e65679ac7101b16c6a62e/Screenshots/PRSD%20.png?raw=true" width="600" alt="Proposed Parallel Ring Streaming Dataflow">
+
 
 PRSD uses two outer H loops:
 
@@ -517,7 +527,7 @@ Speedup   = 4,810,752  / 2,565,187           = 1.875×
 ```
 
 ---
-## 8. Verified results — TABLE II
+## 8. Verified results table
 
 Clock: 80 MHz (T_clk = 12.5 ns). Cycle counts and GOPS values from hardware
 simulation. Speedup = C_RSD / C_PRSD.
@@ -585,47 +595,131 @@ Exact figures depend on the target device, Tn, and Tm. This can be checked from 
   efficiency per unit area.
 - The speedup is independent of Tn, Tm, K, N, M — it depends only on the spatial
   dimensions and the two-row scanning pattern.
+---
+## 10. Results
+
+All cycle and latency measurements are taken directly from Vitis HLS synthesis
+reports. Each pair of screenshots shows the RSD and PRSD result for the same
+convolution layer, confirming the ~1.9× cycle reduction empirically.
 
 ---
 
-## 10. File structure
+### 10.1 LeNet-5
+
+**CONV1** — IFM: 32×32×1, Kernel: 5×5×1×6, OFM: 28×28×1, Tm=1, Tn=1
+
+![LeNet-5 CONV1 RSD](Screenshots/LeNet%20Cycles/RSD/Conv1.png)
+![LeNet-5 CONV1 PRSD](Screenshots/LeNet%20Cycles/PRSD/Conv1.png)
+
+- Cycles RSD: 65,891 — Cycles PRSD: 35,136
+- Speedup: 65,891 / 35,136 = **1.876×**
+
+---
+
+**CONV2** — IFM: 14×14×6, Kernel: 5×5×6×16, OFM: 10×10×16, Tm=8, Tn=2
+
+![LeNet-5 CONV2 RSD](Screenshots/LeNet%20Cycles/RSD/Conv2.png)
+![LeNet-5 CONV2 PRSD](Screenshots/LeNet%20Cycles/PRSD/Conv2.png)
+
+- Cycles RSD: 89,080 — Cycles PRSD: 46,214
+- Speedup: 89,080 / 46,214 = **1.927×**
+
+---
+
+### 10.2 Mini VGGNet-32
+
+**CONV1** — IFM: 32×32×3, Kernel: 3×3×3×32, OFM: 32×32×32, Tm=16, Tn=2
+
+![Mini-VGGNet-32 CONV1 RSD](Screenshots/Mini-VGG%20Cycles/RSD/Conv1.png)
+![Mini-VGGNet-32 CONV1 PRSD](Screenshots/Mini-VGG%20Cycles/PRSD/Conv1.png)
+
+- Cycles RSD: 114,088 — Cycles PRSD: 60,872
+- Speedup: 114,088 / 60,872 = **1.875×**
+
+---
+
+**CONV2** — IFM: 32×32×32, Kernel: 3×3×32×32, OFM: 32×32×32, Tm=8, Tn=8
+
+![Mini-VGGNet-32 CONV2 RSD](Screenshots/Mini-VGG%20Cycles/RSD/Conv2.png)
+![Mini-VGGNet-32 CONV2 PRSD](Screenshots/Mini-VGG%20Cycles/PRSD/Conv2.png)
+
+- Cycles RSD: 833,672 — Cycles PRSD: 433,443
+- Speedup: 833,672 / 433,443 = **1.923×**
+
+---
+
+**CONV3** — IFM: 16×16×64, Kernel: 3×3×64×64, OFM: 16×16×64, Tm=32, Tn=32
+
+![Mini-VGGNet-32 CONV3 RSD](Screenshots/Mini-VGG%20Cycles/RSD/Conv3.png)
+![Mini-VGGNet-32 CONV3 PRSD](Screenshots/Mini-VGG%20Cycles/PRSD/Conv3.png)
+
+- Cycles RSD: 4,810,752 — Cycles PRSD: 2,565,187
+- Speedup: 4,810,752 / 2,565,187 = **1.875×**
+
+---
+
+**CONV4** — IFM: 16×16×64, Kernel: 3×3×64×64, OFM: 16×16×64, Tm=64, Tn=32
+
+![Mini-VGGNet-32 CONV4 RSD](Screenshots/Mini-VGG%20Cycles/RSD/Conv4.png)
+![Mini-VGGNet-32 CONV4 PRSD](Screenshots/Mini-VGG%20Cycles/PRSD/Conv4.png)
+
+- Same Results as Conv3 Layer only (as same Dimensional change)
+- Cycles RSD: 4,810,752 — Cycles PRSD: 2,565,187
+- Speedup: 4,810,752 / 2,565,187 = **1.875×**
+
+---
+
+> Across all six convolution layers and both models the empirical speedup
+> consistently falls in the range **1.875×–1.927×**, confirming the theoretical
+> prediction of approximately **1.9× lower latency** for PRSD over RSD.
+
+
+## 11. File structure
 
 ```
 .
 ├── README.md
 │
-├── rsd/
-│   ├── ring_1_conv2d.cpp          RSD: Tn-channel tile, no padding
-│   ├── ring_2_conv2d.cpp          RSD: Qn-channel remainder, no padding
-│   ├── ring_1_pad_conv2d.cpp      RSD: Tn-channel tile, padding = 1
-│   ├── ring_2_pad_conv2d.cpp      RSD: Qn-channel remainder, padding = 1
-│   └── ring_conv2d.h
+├── parallel_ring_stream/
+│   ├── parallel_1.cpp              PRSD: Tn-channel tile kernel, dual-row output
+│   ├── parallel_2.cpp              PRSD: Qn-channel remainder kernel, dual-row output
+│   ├── parallel_conv2d.cpp         PRSD: single-layer convolution (no tiling)
+│   ├── tb_parallel_conv2d.cpp      Testbench for parallel_conv2d
+│   └── tile_parallel.cpp           PRSD: top-level tiled wrapper (calls parallel_1, parallel_2)
 │
-├── prsd/
-│   ├── parallel_1_conv2d.cpp      PRSD: Tn-channel tile, dual-row output
-│   ├── parallel_2_conv2d.cpp      PRSD: Qn-channel remainder, dual-row output
-│   └── parallel_conv2d.h
+├── ring_stream/
+│   ├── ring_1.cpp                  RSD: Tn-channel tile kernel, no padding
+│   ├── ring_2.cpp                  RSD: Qn-channel remainder kernel, no padding
+│   ├── ring_3.cpp                  RSD: auxiliary tile kernel variant
+│   ├── padded_ring_1.cpp           RSD: Tn-channel tile kernel, padding = 1
+│   ├── padded_ring_2.cpp           RSD: Qn-channel remainder kernel, padding = 1
+│   ├── ring_conv2d.cpp             RSD: single-layer convolution, no padding
+│   ├── ring_conv2d_padding.cpp     RSD: single-layer convolution, padding = 1
+│   ├── tb_ring_conv2d.cpp          Testbench for ring_conv2d
+│   └── tile_ring.cpp               RSD: top-level tiled wrapper (calls ring_1/2/3)
 │
-├── tiled/
-│   ├── tile_ring_conv2d.cpp       RSD top-level tiled wrapper
-│   ├── tile_parallel_conv2d.cpp   PRSD top-level tiled wrapper
-│   └── tile_conv2d.h              Shared tiling parameters (Tn, Tm, Pn, Pm …)
-│
-├── tb/
-│   ├── tb_rsd_lenet.cpp
-│   ├── tb_rsd_vgg.cpp
-│   ├── tb_prsd_lenet.cpp
-│   └── tb_prsd_vgg.cpp
-│
-└── scripts/
-    └── run_hls.tcl
+└── screenshots/
+    ├── LeNet-5.png                 LeNet-5 model architecture / result overview
+    ├── Mini-VggNet 32.png          Mini VGGNet-32 model architecture / result overview
+    ├── PRSD.png                    PRSD dataflow overview screenshot
+    ├── RSD.png                     RSD dataflow overview screenshot
+    ├── LeNet Cycles/
+    │   ├── RSD/
+    │   │   └── ...                 Vitis HLS cycle and latency screenshots — LeNet-5, RSD
+    │   └── PRSD/
+    │       └── ...                 Vitis HLS cycle and latency screenshots — LeNet-5, PRSD
+    └── Mini-VGG Cycles/
+        ├── RSD/
+        │   └── ...                 Vitis HLS cycle and latency screenshots — Mini VGGNet-32, RSD
+        └── PRSD/
+            └── ...                 Vitis HLS cycle and latency screenshots — Mini VGGNet-32, PRSD
 ```
 
 ---
 
 
 
-## 11. References
+## 12. References
 
 1. *ESSA: An Energy-Aware Bit-Serial Streaming Deep Convolutional Neural Network
    Accelerator*: primary reference for RSD, loop tiling definition, PE array
